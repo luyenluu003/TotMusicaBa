@@ -50,11 +50,41 @@ const authController = {
   },
 
   //LOGIN
+  // loginUser: async (req, res) => {
+  //   try {
+  //     const user = await User.findOne({ username: req.body.username });
+  //     if (!user) {
+  //       return res.status(400).json("Wrong username!");
+  //     }
+  //     const validPassword = await bcrypt.compare(
+  //       req.body.password,
+  //       user.password
+  //     );
+  //     if (!validPassword) {
+  //       return res.status(400).json("Wrong password");
+  //     }
+  //     if (user && validPassword) {
+  //       const accessToken = authController.generateAccressToken(user);
+  //       const refreshToken = authController.generateRefreshToken(user);
+  //       refreshTokens.push(refreshToken);
+  //       res.cookie("refreshToken", refreshToken, {
+  //         httpOnly: true,
+  //         secure: false, //deloy lên thì để thành true
+  //         path: "/",
+  //         sameSite: "strict",
+  //       });
+  //       const { password, ...others } = user._doc;
+  //       res.status(200).json({ ...others, accessToken });
+  //     }
+  //   } catch (err) {
+  //     res.status(500).json(err);
+  //   }
+  // },
   loginUser: async (req, res) => {
     try {
-      const user = await User.findOne({ username: req.body.username });
+      const user = await User.findOne({ email: req.body.email });
       if (!user) {
-        return res.status(400).json("Wrong username!");
+        return res.status(400).json("Wrong email!");
       }
       const validPassword = await bcrypt.compare(
         req.body.password,
@@ -111,32 +141,26 @@ const authController = {
   //Đổi mật khẩu
 
   changePassword: async (req, res) => {
-    //Check lại sau này kiểm tra email
     try {
-      const { newPassword } = req.body;
-      // Mã hóa mật khẩu mới và lưu vào cơ sở dữ liệu
-      // Kiểm tra tính hợp lệ của resetToken
-      if (
-        User.resetToken !== resetToken ||
-        Date.now() > User.resetTokenExpiration
-      ) {
-        return res.status(400).json("Invalid or expired reset token");
-      }
+      const newPassword = req.body.newPassword;
+      console.log("New Password:", newPassword);
 
+      if (!newPassword) {
+        return res.status(400).json("New password is required");
+      }
       // Mã hóa mật khẩu mới và lưu vào cơ sở dữ liệu
       const salt = await bcrypt.genSalt(10);
       const hashedNewPassword = await bcrypt.hash(newPassword, salt);
-      User.password = hashedNewPassword;
 
-      // Xóa resetToken và resetTokenExpiration sau khi thay đổi mật khẩu
-      User.resetToken = undefined;
-      User.resetTokenExpiration = undefined;
+      // Sử dụng req.user thay vì req.User (tùy thuộc vào cách bạn đã thiết lập middleware)
+      req.user.password = hashedNewPassword;
+      console.log("Request User:", req.user);
 
-      await user.save();
+      // Lưu vào cơ sở dữ liệu
+      await req.user.save();
 
-      // Gửi email xác nhận
-
-      res.status(200).json("Password reset successfully");
+      // Gửi phản hồi
+      res.status(200).json("Password changed successfully");
     } catch (error) {
       console.error(error);
       res.status(500).json(error.message || "Internal Server Error");
