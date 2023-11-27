@@ -99,7 +99,7 @@ const authController = {
         refreshTokens.push(refreshToken);
         res.cookie("refreshToken", refreshToken, {
           httpOnly: true,
-          secure: false, //deloy lên thì để thành true
+          secure: true, //deloy lên thì để thành true
           path: "/",
           sameSite: "strict",
         });
